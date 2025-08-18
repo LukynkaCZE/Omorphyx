@@ -8,7 +8,7 @@ open class Container : Drawable() {
     private val _children = mutableListOf<Drawable>()
     val children get() = _children.toList()
 
-    fun add(child: Drawable) {
+    open fun add(child: Drawable) {
         child.parent = this
         _children.add(child)
     }
@@ -49,4 +49,16 @@ open class Container : Drawable() {
             canvas.restore()
         }
     }
+
+    override fun drawDebug(canvas: Canvas) {
+        children.forEach { child ->
+            val (x, y) = child.alignedPosition()
+            canvas.save()
+            canvas.translate(x, y)
+            child.drawDebug(canvas)
+            canvas.restore()
+        }
+        super.drawDebug(canvas)
+    }
+
 }
