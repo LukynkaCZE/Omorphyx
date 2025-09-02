@@ -8,7 +8,7 @@ import org.jetbrains.skia.Canvas
 import org.jetbrains.skia.PaintMode
 import org.jetbrains.skia.Rect
 
-class FillFlowContainer() : Container() {
+class FillFlowContainer() : CompositeDrawable() {
 
     constructor(unit: FillFlowContainer.() -> Unit) : this() {
         unit.invoke(this)
@@ -19,9 +19,10 @@ class FillFlowContainer() : Container() {
         VERTICAL
     }
 
-    override fun add(child: Drawable) {
-        super.add(child)
+    override fun <T : Drawable> addChild(child: T): T {
+        super.addChild(child)
         invalidateLayout()
+        return child
     }
 
     val direction: Bindable<Direction> = Bindable(Direction.VERTICAL)
@@ -39,7 +40,7 @@ class FillFlowContainer() : Container() {
     private var layoutInvalid = true
 
     override fun draw(canvas: Canvas) {
-        updateAutoSizeAxis()
+        updateDrawableLayout()
         var currentOffset = 0f
 
         children.forEach { child ->
@@ -64,7 +65,7 @@ class FillFlowContainer() : Container() {
     }
 
     override fun drawDebug(canvas: Canvas) {
-        updateAutoSizeAxis()
+        updateDrawableLayout()
         var currentOffset = 0f
 
         children.forEach { child ->
@@ -94,44 +95,46 @@ class FillFlowContainer() : Container() {
         }
     }
 
-    override fun updateAutoSizeAxis() {
-        if (autoSizeAxes == Axes.NONE) return
+    override fun updateDrawableLayout() {
+        super.updateDrawableLayout()
+        if (autoSizeAxes != Axes.NONE) {
 
-        if (layoutInvalid) {
-            layoutInvalid = false
-        }
-
-        var totalWidth = 0
-        var totalHeight = 0
-        var currentOffset = 0
-
-        children.forEach { child ->
-            child.updateAutoSizeAxis()
-
-            when (direction.value) {
-                Direction.HORIZONTAL -> {
-                    totalWidth = maxOf(totalWidth, currentOffset + child.width) // Track the maximum extent
-                    totalHeight = maxOf(totalHeight, child.height)
-                    currentOffset += child.width + spacing.value
-                }
-
-                Direction.VERTICAL -> {
-                    totalWidth = maxOf(totalWidth, child.width)
-                    totalHeight = maxOf(totalHeight, currentOffset + child.height) // Track the maximum extent
-                    currentOffset += child.height + spacing.value
-                }
-            }
-        }
-
-        when (autoSizeAxes) {
-            Axes.X -> width = totalWidth
-            Axes.Y -> height = totalHeight
-            Axes.BOTH -> {
-                width = totalWidth
-                height = totalHeight
+            if (layoutInvalid) {
+                layoutInvalid = false
             }
 
-            else -> {}
+            var totalWidth = 0
+            var totalHeight = 0
+            var currentOffset = 0
+
+            children.forEach { child ->
+                child.updateDrawableLayout()
+
+                when (direction.value) {
+                    Direction.HORIZONTAL -> {
+                        totalWidth = maxOf(totalWidth, currentOffset + child.width) // Track the maximum extent
+                        totalHeight = maxOf(totalHeight, child.height)
+                        currentOffset += child.width + spacing.value
+                    }
+
+                    Direction.VERTICAL -> {
+                        totalWidth = maxOf(totalWidth, child.width)
+                        totalHeight = maxOf(totalHeight, currentOffset + child.height) // Track the maximum extent
+                        currentOffset += child.height + spacing.value
+                    }
+                }
+            }
+
+            when (autoSizeAxes) {
+                Axes.X -> width = totalWidth
+                Axes.Y -> height = totalHeight
+                Axes.BOTH -> {
+                    width = totalWidth
+                    height = totalHeight
+                }
+
+                else -> {}
+            }
         }
     }
 }
