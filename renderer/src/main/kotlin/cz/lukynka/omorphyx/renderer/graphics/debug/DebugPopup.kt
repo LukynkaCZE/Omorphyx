@@ -28,7 +28,7 @@ class DebugPopup() : CompositeDrawable() {
         background = this.addChild(Box {
             color = Color4.PURPLE
             relativeSizeAxes = Axes.BOTH
-            cornerRadius = 25f
+            cornerRadius = 35f
         })
 
         fillFlowContainer = this.addChild(FillFlowContainer {
@@ -37,16 +37,18 @@ class DebugPopup() : CompositeDrawable() {
             anchor = Anchor.CENTER
             origin = Anchor.CENTER
             direction.value = FillFlowContainer.Direction.VERTICAL
+            spacing.value = 15
 
             titleDrawable = this.addChild(TextDrawable {
                 origin = Anchor.CENTER
-                relativeSizeAxes = Axes.X
+                anchor = Anchor.CENTER
                 text = this@DebugPopup.title
                 fontSize = 24f
             })
 
             textDrawable = this.addChild(TextDrawable {
-                relativeSizeAxes = Axes.X
+                origin = Anchor.CENTER
+                anchor = Anchor.CENTER
                 text = this@DebugPopup.text
                 fontSize = 16f
             })

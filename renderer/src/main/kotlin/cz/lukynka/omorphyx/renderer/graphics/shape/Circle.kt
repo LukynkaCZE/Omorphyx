@@ -8,9 +8,9 @@ class Circle() : ColorableDrawable() {
         unit.invoke(this)
     }
 
-    override fun draw(canvas: Canvas) {
+    override fun onDraw(canvas: Canvas) {
         val radius = (minOf(width, height) / 2).toFloat()
-        canvas.drawCircle((width / 2).toFloat(), (height / 2).toFloat(), radius, color.toPaint())
+        canvas.drawCircle((width / 2).toFloat(), (height / 2).toFloat(), radius, getPaint())
     }
 
 }

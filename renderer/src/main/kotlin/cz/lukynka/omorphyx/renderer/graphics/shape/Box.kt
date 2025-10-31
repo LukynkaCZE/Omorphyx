@@ -11,11 +11,11 @@ class Box() : ColorableDrawable() {
         unit.invoke(this)
     }
 
-    override fun draw(canvas: Canvas) {
+    override fun onDraw(canvas: Canvas) {
         if (width <= 0 || height <= 0) return
 
         val roundRect = RRect.makeXYWH(0f, 0f, width.toFloat(), height.toFloat(), cornerRadius)
-        canvas.drawRRect(roundRect, color.toPaint())
+        canvas.drawRRect(roundRect, getPaint())
     }
 
 }

@@ -1,12 +1,9 @@
 package cz.lukynka.omorphyx.renderer.graphics.container
 
-import cz.lukynka.Bindable
-import cz.lukynka.omorphyx.renderer.Color4
+import cz.lukynka.bindables.Bindable
 import cz.lukynka.omorphyx.renderer.graphics.Drawable
 import cz.lukynka.omorphyx.renderer.graphics.layout.Axes
 import org.jetbrains.skia.Canvas
-import org.jetbrains.skia.PaintMode
-import org.jetbrains.skia.Rect
 
 class FillFlowContainer() : CompositeDrawable() {
 
@@ -28,6 +25,9 @@ class FillFlowContainer() : CompositeDrawable() {
     val direction: Bindable<Direction> = Bindable(Direction.VERTICAL)
     val spacing: Bindable<Int> = Bindable(0)
 
+    private var contentWidth = 0
+    private var contentHeight = 0
+
     init {
         direction.valueChanged { invalidateLayout() }
         spacing.valueChanged { invalidateLayout() }
@@ -39,98 +39,70 @@ class FillFlowContainer() : CompositeDrawable() {
 
     private var layoutInvalid = true
 
-    override fun draw(canvas: Canvas) {
+    override fun onDraw(canvas: Canvas) {
         updateDrawableLayout()
-        var currentOffset = 0f
+
+        var currentOffset: Float = when (direction.value) {
+            Direction.HORIZONTAL -> (width - contentWidth) / 2f
+            Direction.VERTICAL -> (height - contentHeight) / 2f
+        }
 
         children.forEach { child ->
             canvas.save()
+            val (x, y) = child.alignedPosition()
             when (direction.value) {
                 Direction.HORIZONTAL -> {
-                    canvas.translate(currentOffset, 0f)
+                    canvas.translate(currentOffset, y)
                     currentOffset += child.width + spacing.value
                 }
 
                 Direction.VERTICAL -> {
-                    canvas.translate(0f, currentOffset)
-                    currentOffset += child.height + spacing.value
-                }
-            }
-            val (x, y) = child.alignedPosition()
-            canvas.translate(x, y)
-
-            child.draw(canvas)
-            canvas.restore()
-        }
-    }
-
-    override fun drawDebug(canvas: Canvas) {
-        updateDrawableLayout()
-        var currentOffset = 0f
-
-        children.forEach { child ->
-            canvas.save()
-            when (direction.value) {
-                Direction.HORIZONTAL -> {
-                    canvas.translate(currentOffset, 0f)
-                    currentOffset += child.width + spacing.value
-                }
-
-                Direction.VERTICAL -> {
-                    canvas.translate(0f, currentOffset)
+                    canvas.translate(x, currentOffset)
                     currentOffset += child.height + spacing.value
                 }
             }
 
-            val (x, y) = child.alignedPosition()
-            canvas.translate(x, y)
-
-            child.drawDebug(canvas)
+            child.onDraw(canvas)
             canvas.restore()
-        }
-
-        if (width > 0 && height > 0) {
-            val bounds = Rect.makeXYWH(0f, 0f, width.toFloat(), height.toFloat())
-            canvas.drawRect(bounds, Color4.YELLOW.toPaint(PaintMode.STROKE))
         }
     }
 
     override fun updateDrawableLayout() {
         super.updateDrawableLayout()
-        if (autoSizeAxes != Axes.NONE) {
 
-            if (layoutInvalid) {
-                layoutInvalid = false
-            }
+        if (layoutInvalid) {
+            layoutInvalid = false
 
-            var totalWidth = 0
-            var totalHeight = 0
-            var currentOffset = 0
+            children.forEach { it.updateDrawableLayout() }
 
-            children.forEach { child ->
-                child.updateDrawableLayout()
+            var calculatedWidth = 0
+            var calculatedHeight = 0
 
+            if (children.isNotEmpty()) {
                 when (direction.value) {
                     Direction.HORIZONTAL -> {
-                        totalWidth = maxOf(totalWidth, currentOffset + child.width) // Track the maximum extent
-                        totalHeight = maxOf(totalHeight, child.height)
-                        currentOffset += child.width + spacing.value
+                        calculatedWidth = children.sumOf { it.width } + (children.size - 1).coerceAtLeast(0) * spacing.value
+                        calculatedHeight = children.maxOfOrNull { it.height } ?: 0
                     }
 
                     Direction.VERTICAL -> {
-                        totalWidth = maxOf(totalWidth, child.width)
-                        totalHeight = maxOf(totalHeight, currentOffset + child.height) // Track the maximum extent
-                        currentOffset += child.height + spacing.value
+                        calculatedWidth = children.maxOfOrNull { it.width } ?: 0
+                        calculatedHeight = children.sumOf { it.height } + (children.size - 1).coerceAtLeast(0) * spacing.value
                     }
                 }
             }
 
+            contentWidth = calculatedWidth
+            contentHeight = calculatedHeight
+        }
+
+        if (autoSizeAxes != Axes.NONE) {
             when (autoSizeAxes) {
-                Axes.X -> width = totalWidth
-                Axes.Y -> height = totalHeight
+                Axes.X -> width = contentWidth
+                Axes.Y -> height = contentHeight
                 Axes.BOTH -> {
-                    width = totalWidth
-                    height = totalHeight
+                    width = contentWidth
+                    height = contentHeight
                 }
 
                 else -> {}

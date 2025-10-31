@@ -2,9 +2,7 @@ package cz.lukynka.omorphyx.renderer.graphics.debug
 
 import cz.lukynka.omorphyx.renderer.Color4
 import cz.lukynka.omorphyx.renderer.graphics.Drawable
-import org.jetbrains.skia.Canvas
-import org.jetbrains.skia.Font
-import org.jetbrains.skia.TextLine
+import org.jetbrains.skia.*
 
 class TextDrawable() : Drawable() {
 
@@ -23,7 +21,9 @@ class TextDrawable() : Drawable() {
 
     var color: Color4 = Color4.WHITE
 
-    private val font = Font().apply { size = fontSize }
+    private val font = Font().apply {
+        size = fontSize
+    }
     private var textLine: TextLine? = null
 
     constructor(unit: TextDrawable.() -> Unit) : this() {
@@ -34,17 +34,23 @@ class TextDrawable() : Drawable() {
         if (text.isNotEmpty()) {
             textLine = TextLine.make(text, font)
             width = textLine!!.width.toInt()
-            height = textLine!!.height.toInt()
+            height = (textLine!!.height / 2f).toInt()
         } else {
             width = 0
             height = 0
         }
     }
 
-    override fun draw(canvas: Canvas) {
+    override fun onDraw(canvas: Canvas) {
+
+        val paint = color.toPaint().apply {
+            isAntiAlias = true
+            mode = PaintMode.FILL
+        }
+
         textLine?.let {
-//            val yOffset = (height - font.metrics.ascent) / 2f
-            canvas.drawTextLine(it, 0f, 0f, color.toPaint())
+            val yOffset = (y + ((height) - font.metrics.ascent))
+            canvas.drawTextLine(it, x, yOffset, paint)
         }
     }
 }

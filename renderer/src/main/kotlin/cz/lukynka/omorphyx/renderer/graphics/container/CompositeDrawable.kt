@@ -1,10 +1,14 @@
 package cz.lukynka.omorphyx.renderer.graphics.container
 
+import cz.lukynka.omorphyx.renderer.Color4
 import cz.lukynka.omorphyx.renderer.graphics.Drawable
-import cz.lukynka.omorphyx.renderer.graphics.layout.Axes
 import cz.lukynka.omorphyx.renderer.input.KeyCombination
 import org.jetbrains.skia.Canvas
+import org.jetbrains.skia.Paint
+import org.jetbrains.skia.PaintMode
 import java.awt.event.KeyEvent
+import cz.lukynka.omorphyx.renderer.OmorphyxDebug
+import org.jetbrains.skia.Rect
 
 open class CompositeDrawable : Drawable() {
 
@@ -19,53 +23,81 @@ open class CompositeDrawable : Drawable() {
 
     override fun updateDrawableLayout() {
         super.updateDrawableLayout()
-        children.forEach { child ->
-            child.updateDrawableLayout()
-        }
-        if (autoSizeAxes != Axes.NONE) {
-            var maxWidth = 0
-            var maxHeight = 0
-
-            for (child in children) {
-                child.updateDrawableLayout()
-                val (childX, childY) = child.alignedPosition()
-                val childRight = childX.toInt() + child.width
-                val childBottom = childY.toInt() + child.height
-                if (childRight > maxWidth) maxWidth = childRight
-                if (childBottom > maxHeight) maxHeight = childBottom
-            }
-
-            when (autoSizeAxes) {
-                Axes.X -> width = maxWidth
-                Axes.Y -> height = maxHeight
-                Axes.BOTH -> {
-                    width = maxWidth
-                    height = maxHeight
-                }
-
-                else -> {}
-            }
-        }
+        _children.forEach(Drawable::updateDrawableLayout)
     }
 
-    override fun draw(canvas: Canvas) {
-        updateDrawableLayout()
+    override fun onDraw(canvas: Canvas) {
         _children.forEach { child ->
-            val (x, y) = child.alignedPosition()
             canvas.save()
-            canvas.translate(x, y)
+            canvas.concat(child.getTransformationMatrix())
             child.draw(canvas)
             canvas.restore()
         }
     }
 
+
     override fun drawDebug(canvas: Canvas) {
+        if (!OmorphyxDebug.debugViewer) return
+    
+        val boundsPaint = Paint().apply {
+            color = Color4.RED.toPacketInt()
+            mode = PaintMode.STROKE
+            strokeWidth = 2.5f
+        }
+        val originPaint = Paint().apply {
+            color = Color4.GREEN.toPacketInt()
+            mode = PaintMode.FILL
+        }
+        val anchorPaint = Paint().apply {
+            color = Color4.PURPLE.toPacketInt()
+            mode = PaintMode.FILL
+        }
+
         children.forEach { child ->
-            val (x, y) = child.alignedPosition()
             canvas.save()
-            canvas.translate(x, y)
-            child.drawDebug(canvas)
+        
+            val scaledWidth = child.width * child.scale.x
+            val scaledHeight = child.height * child.scale.y
+        
+            val (alignedX, alignedY) = child.alignedPosition()
+        
+            val originOffset = child.origin.getOffset(child.width, child.height)
+            val originX = originOffset.first.toFloat()
+            val originY = originOffset.second.toFloat()
+        
+            val scaledTopLeftX = alignedX + originX - (originX * child.scale.x)
+            val scaledTopLeftY = alignedY + originY - (originY * child.scale.y)
+        
+            val bounds = Rect.makeXYWH(scaledTopLeftX, scaledTopLeftY, scaledWidth, scaledHeight)
+            canvas.drawRect(bounds, boundsPaint)
+        
+            val screenOriginX = alignedX + originX
+            val screenOriginY = alignedY + originY
+        
+            val (parentWidth, parentHeight) = child.parentSize()
+            val anchorOffset = child.anchor.getOffset(parentWidth, parentHeight)
+            val screenAnchorX = anchorOffset.first.toFloat()
+            val screenAnchorY = anchorOffset.second.toFloat()
+        
+            val originSize = 10f
+            val originHalf = originSize / 2f
+            val anchorSize = 8f
+            val anchorHalf = anchorSize / 2f
+
+            val originRect = Rect.makeXYWH(screenOriginX - originHalf, screenOriginY - originHalf, originSize, originSize)
+            canvas.drawRect(originRect, originPaint)
+
+            val anchorRect = Rect.makeXYWH(screenAnchorX - anchorHalf, screenAnchorY - anchorHalf, anchorSize, anchorSize)
+            canvas.drawRect(anchorRect, anchorPaint)
+        
             canvas.restore()
+        
+            if (child is CompositeDrawable) {
+                canvas.save()
+                canvas.concat(child.getTransformationMatrix())
+                child.drawDebug(canvas)
+                canvas.restore()
+            }
         }
         super.drawDebug(canvas)
     }

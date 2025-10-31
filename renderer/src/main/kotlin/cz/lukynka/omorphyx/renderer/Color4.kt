@@ -42,6 +42,25 @@ data class Color4(val r: Int, val g: Int, val b: Int, val a: Int) {
             val b = (argb) and 0xFF
             return Color4(r, g, b, a)
         }
+
+        fun fromHex(hex: String): Color4 {
+            // Remove the optional '#' prefix
+            val formattedHex = if (hex.startsWith("#")) hex.substring(1) else hex
+
+            // Handle different string lengths
+            val hexValue = when (formattedHex.length) {
+                6 -> formattedHex.toLong(16).toInt() or 0xFF000000.toInt() // RGB (implied full alpha)
+                8 -> formattedHex.toLong(16).toInt() // ARGB
+                else -> throw IllegalArgumentException("Invalid hexadecimal color string: $hex")
+            }
+
+            val a = (hexValue ushr 24) and 0xFF
+            val r = (hexValue ushr 16) and 0xFF
+            val g = (hexValue ushr 8) and 0xFF
+            val b = (hexValue) and 0xFF
+
+            return Color4(r, g, b, a)
+        }
     }
 
     fun toPacketInt(): Int {

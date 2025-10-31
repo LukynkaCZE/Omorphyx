@@ -1,7 +1,7 @@
 [versions]
 skia = "0.9.18"
 pretty-log = "1.4"
-bindables = "1.1"
+bindables = "2.2"
 kotlinx-serialization = "1.3.0"
 ktoml = "0.5.1"
 
