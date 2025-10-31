@@ -1,5 +1,7 @@
 package cz.lukynka.omorphyx.renderer
 
+import cz.lukynka.kairos.Scheduler
+import cz.lukynka.omorphyx.renderer.dependency.DependencyContainer
 import cz.lukynka.omorphyx.renderer.graphics.container.CompositeDrawable
 import cz.lukynka.omorphyx.renderer.graphics.layout.Axes
 import cz.lukynka.omorphyx.renderer.input.KeyCombination
@@ -22,9 +24,16 @@ class OmorphyxWindow(val projectName: String) : CompositeDrawable() {
 
     private val pressedKeys = mutableSetOf<Int>()
 
+    private val mainScheduler = Scheduler(Scheduler.Threading.SINGLE_THREADED)
+    val dependencyContainer = DependencyContainer()
+
     init {
         this.autoSizeAxes = Axes.NONE
         this.registerKeyCombination(KEY_COMBINATION_DEBUG_RENDER)
+
+        dependencyContainer.cache(mainScheduler)
+
+        performLoad(dependencyContainer)
 
         val layer = SkiaLayer()
         layer.renderDelegate = SkiaLayerRenderDelegate(layer, object : SkikoRenderDelegate {
@@ -92,5 +101,4 @@ class OmorphyxWindow(val projectName: String) : CompositeDrawable() {
         pressedKeys.remove(event.keyCode)
         return super.onKeyUp(event)
     }
-
 }

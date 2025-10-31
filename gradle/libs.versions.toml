@@ -4,11 +4,13 @@ pretty-log = "1.4"
 bindables = "2.2"
 kotlinx-serialization = "1.3.0"
 ktoml = "0.5.1"
+kairos = "1.0"
 
 [libraries]
 kotlinx-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
 kotlinx-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 logger = { group = "cz.lukynka", name = "pretty-log", version.ref = "pretty-log" }
+kairos = { group = "cz.lukynka", name = "kairos", version.ref = "kairos" }
 bindables = { group = "cz.lukynka", name = "kotlin-bindables", version.ref = "bindables" }
 ktoml-core = { group = "com.akuleshov7", name = "ktoml-core", version.ref = "ktoml" }
 ktoml-file = { group = "com.akuleshov7", name = "ktoml-file", version.ref = "ktoml" }

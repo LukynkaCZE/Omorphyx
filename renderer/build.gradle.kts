@@ -13,6 +13,7 @@ dependencies {
     api(libs.bundles.skia)
     implementation(libs.logger)
     implementation(libs.bundles.serialization)
+    api(libs.kairos)
     testImplementation(kotlin("test"))
 }
 

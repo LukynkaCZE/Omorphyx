@@ -1,13 +1,20 @@
 package cz.lukynka.omorphyx.renderer.graphics
 
+import cz.lukynka.kairos.Scheduler
 import cz.lukynka.omorphyx.renderer.OmorphyxDebug
+import cz.lukynka.omorphyx.renderer.dependency.DependencyContainer
 import cz.lukynka.omorphyx.renderer.graphics.container.CompositeDrawable
 import cz.lukynka.omorphyx.renderer.graphics.layout.Anchor
 import cz.lukynka.omorphyx.renderer.graphics.layout.Axes
 import cz.lukynka.omorphyx.renderer.graphics.layout.vector.Vector2
 import cz.lukynka.omorphyx.renderer.graphics.layout.vector.Vector2f
 import cz.lukynka.omorphyx.renderer.input.KeyCombination
-import org.jetbrains.skia.*
+import cz.lukynka.omorphyx.renderer.transform.Animation
+import cz.lukynka.omorphyx.renderer.transform.AnimationManager
+import cz.lukynka.omorphyx.renderer.transform.Easing
+import cz.lukynka.omorphyx.renderer.transform.Transform
+import org.jetbrains.skia.Canvas
+import org.jetbrains.skia.Matrix33
 import java.awt.event.KeyEvent
 
 abstract class Drawable {
@@ -28,7 +35,25 @@ abstract class Drawable {
     var relativeSizeAxes: Axes = Axes.NONE
     var parent: CompositeDrawable? = null
 
+    private var isLoaded = false
+
+    lateinit var scheduler: Scheduler
+
+    lateinit var animationManager: AnimationManager
+
     internal val registeredKeyCombinations = mutableSetOf<KeyCombination>()
+
+    internal fun performLoad(dependencyContainer: DependencyContainer) {
+        if (isLoaded) return
+        scheduler = dependencyContainer.get<Scheduler>()
+        animationManager = AnimationManager(scheduler)
+
+        onLoad(dependencyContainer)
+        isLoaded = true
+    }
+
+    protected open fun onLoad(dependencyContainer: DependencyContainer) {
+    }
 
     fun parentSize(): Vector2 {
         return if (parent != null) Vector2(parent!!.width, parent!!.height) else Vector2.ZERO
@@ -120,4 +145,62 @@ abstract class Drawable {
         }
         return false
     }
+
+    fun <T> Drawable.animateTo(
+        startValue: T,
+        endValue: T,
+        duration: Long,
+        easing: Easing = Easing.IN_SINE,
+        transform: Transform<T>,
+        onUpdate: (T) -> Unit,
+        onComplete: (() -> Unit)? = null,
+        delay: Long = 0L,
+    ): Animation<T> {
+        val animation = Animation(startValue, endValue, duration, easing, transform, onUpdate, onComplete, delay)
+        animationManager.addAnimation(animation)
+        return animation
+    }
+
+    fun Drawable.animatePosition(
+        position: Vector2f,
+        duration: Long,
+        easing: Easing = Easing.IN_SINE,
+        onComplete: (() -> Unit)? = null,
+        delay: Long = 0L,
+    ): Animation<Vector2f> {
+        return animateTo(
+            startValue = Vector2f(this.x, this.y),
+            endValue = position,
+            duration = duration,
+            easing = easing,
+            transform = Transform.LINEAR_VECTOR2F,
+            onUpdate = {
+                this.x = it.x
+                this.y = it.y
+            },
+            onComplete = onComplete,
+            delay = delay,
+        )
+    }
+
+    fun Drawable.animateScale(
+        endScale: Vector2f,
+        duration: Long,
+        easing: Easing = Easing.IN_SINE,
+        onComplete: (() -> Unit)? = null,
+        delay: Long = 0L,
+    ): Animation<Vector2f> {
+        return animateTo(
+            startValue = Vector2f(this.scale.x, this.scale.y),
+            endValue = endScale,
+            duration = duration,
+            easing = easing,
+            transform = Transform.LINEAR_VECTOR2F,
+            onUpdate = { this.scale = it },
+            onComplete = onComplete,
+            delay = delay,
+        )
+    }
+
+
 }

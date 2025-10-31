@@ -1,13 +1,18 @@
 package cz.lukynka.omorphyx.demo
 
 import cz.lukynka.bindables.Bindable
+import cz.lukynka.kairos.Scheduler
 import cz.lukynka.omorphyx.renderer.Color4
+import cz.lukynka.omorphyx.renderer.dependency.DependencyContainer
 import cz.lukynka.omorphyx.renderer.graphics.container.CompositeDrawable
 import cz.lukynka.omorphyx.renderer.graphics.container.Container
 import cz.lukynka.omorphyx.renderer.graphics.debug.TextDrawable
 import cz.lukynka.omorphyx.renderer.graphics.layout.Anchor
 import cz.lukynka.omorphyx.renderer.graphics.layout.Axes
+import cz.lukynka.omorphyx.renderer.graphics.layout.vector.Vector2f
 import cz.lukynka.omorphyx.renderer.graphics.shape.Box
+import cz.lukynka.omorphyx.renderer.transform.Easing
+import java.awt.event.KeyEvent
 
 class Button() : CompositeDrawable() {
 
@@ -18,10 +23,7 @@ class Button() : CompositeDrawable() {
     val text = Bindable("Button")
     lateinit var textDrawable: TextDrawable
 
-    init {
-        text.valueChanged { event ->
-            textDrawable.text = event.newValue
-        }
+    override fun onLoad(dependencyContainer: DependencyContainer) {
 
         addChild(Container {
             relativeSizeAxes = Axes.BOTH
@@ -39,7 +41,15 @@ class Button() : CompositeDrawable() {
                 text = this@Button.text.value
             })
         })
+
+        text.valueChanged { event ->
+            textDrawable.text = event.newValue
+        }
     }
 
+    override fun onKeyTyped(event: KeyEvent): Boolean {
+        this.animateScale(Vector2f(2f, 2f), 5000, Easing.OUT_ELASTIC)
+        return true
+    }
 
 }

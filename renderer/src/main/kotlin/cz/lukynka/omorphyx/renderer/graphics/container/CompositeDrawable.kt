@@ -8,6 +8,7 @@ import org.jetbrains.skia.Paint
 import org.jetbrains.skia.PaintMode
 import java.awt.event.KeyEvent
 import cz.lukynka.omorphyx.renderer.OmorphyxDebug
+import cz.lukynka.omorphyx.renderer.dependency.DependencyContainer
 import org.jetbrains.skia.Rect
 
 open class CompositeDrawable : Drawable() {
@@ -15,9 +16,15 @@ open class CompositeDrawable : Drawable() {
     private val _children = mutableListOf<Drawable>()
     val children get() = _children.toList()
 
+    private var dependencyContainer: DependencyContainer? = null
+
     open fun <T : Drawable> addChild(child: T): T {
         child.parent = this
         _children.add(child)
+
+        if(dependencyContainer != null) {
+            child.performLoad(dependencyContainer!!)
+        }
         return child
     }
 
@@ -35,6 +42,14 @@ open class CompositeDrawable : Drawable() {
         }
     }
 
+    override fun onLoad(dependencyContainer: DependencyContainer) {
+        this.dependencyContainer = dependencyContainer
+
+        // Load all existing children
+        _children.forEach { child ->
+            child.performLoad(dependencyContainer)
+        }
+    }
 
     override fun drawDebug(canvas: Canvas) {
         if (!OmorphyxDebug.debugViewer) return
